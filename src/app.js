@@ -1,5 +1,6 @@
+// Test app
 import express from 'express';
-import handleSuperSocket from './server';
+import { handleClient2Client } from '.';
 
 var app = express();
 var http = require('http').createServer(app);
@@ -12,5 +13,5 @@ http.listen(port, () => {
 });
 
 io.on('connection', (socket) => {
-  handleSuperSocket(socket);
+  handleClient2Client(socket);
 });

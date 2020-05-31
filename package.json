@@ -1,32 +1,32 @@
 {
-  "name": "super-socket.io",
+  "name": "client2client.io",
   "version": "1.0.0",
-  "description": "",
+  "description": "Socket io wrapper to enable client to client communications like RPC and pub/sub.",
   "main": "index.js",
   "keywords": [],
   "author": "",
   "license": "ISC",
   "scripts": {
-    "clean": "rm dist/bundle.js",
-    "start": "parcel src/index.html",
-    "build-prod": "parcel build src/index.html",
-    "test": "jest --watchAll",
+    "clean": "rm ./lib/ -r",
+    "test": "jest --watch",
+    "coverage": "jest --coverage",
+    "prepublish": "babel src --out-dir lib --ignore '**/*.test.js' --ignore '**/app.js'",
     "server": "nodemon src/app.js --exec babel-node"
   },
   "dependencies": {
-    "express": "^4.17.1",
-    "nanoid": "^3.1.9",
-    "socket.io": "^2.3.0"
+    "nanoid": "^3.1.9"
   },
   "devDependencies": {
-    "nodemon": "^2.0.4",
+    "socket.io": "^2.3.0",
+    "express": "^4.17.1",
+    "@babel/cli": "^7.10.1",
     "@babel/core": "^7.10.2",
     "@babel/node": "^7.10.1",
     "@babel/preset-env": "^7.10.1",
     "babel-jest": "^26.0.1",
     "jest": "^26.0.1",
     "jest-transform-stub": "^2.0.0",
-    "parcel-bundler": "^1.12.4",
+    "nodemon": "^2.0.4",
     "prettier": "^2.0.5"
   },
   "jest": {

@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid';
 
-class Room {
+class Client2CLient {
   constructor(socket) {
     this._socket = socket;
   }
@@ -8,7 +8,7 @@ class Room {
   /**
    * Send an event to all other client in room. Also to self if true.
    * @param {string} name Name of event
-   * @param {*} params Params of event
+   * @param {*} params arguments of event
    * @param {boolean} self if true, the publish get the event too
    */
   publish(name, params, self = false) {
@@ -42,14 +42,16 @@ class Room {
             ok: result,
           });
         } catch (err) {
-          this._socket.emit(`result.${callId}`, { err: err });
+          this._socket.emit(`result.${callId}`, { err: '' + err });
         }
       });
     });
     this._socket.emit('register', { name });
-    return () => {
-      this._socket.emit('unregister', { name });
-    };
+    return () =>
+      new Promise((resolve) => {
+        this._socket.on(`unregister.${name}`, resolve);
+        this._socket.emit('unregister', { name });
+      });
   }
 
   /**
@@ -80,8 +82,8 @@ class Room {
  * @param {function} onMaster is called when the client became the master of
  *   the room, i.e. the first client or the next one if the first quit.
  */
-export const join = (socket, name, onMaster = () => {}) => {
-  const room = new Room(socket);
+export const joinClient2Client = (socket, name, onMaster = () => {}) => {
+  const room = new Client2CLient(socket);
   return new Promise((resolve, reject) => {
     socket.on('roomJoined', () => {
       resolve(room);
@@ -90,4 +92,4 @@ export const join = (socket, name, onMaster = () => {}) => {
   });
 };
 
-export default join;
+export default joinClient2Client;

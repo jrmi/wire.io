@@ -1,12 +1,11 @@
 const rooms = {};
 
-export const handleSuperSocket = (socket) => {
+export const handleC2C = (socket) => {
   socket.on('joinSuperSocket', ({ name: roomName }) => {
-    console.log(`New user for room ${roomName}`);
     socket.join(roomName);
 
     if (rooms[roomName] === undefined) {
-      rooms[roomName] = {};
+      rooms[roomName] = { users: [], rpc: {} };
     }
 
     // Publish event to others and self if `self`
@@ -20,7 +19,7 @@ export const handleSuperSocket = (socket) => {
     // Register new remote function
     socket.on('register', ({ name }) => {
       // Define function for the room
-      rooms[roomName][name] = ({ callId, params }) =>
+      rooms[roomName].rpc[name] = ({ callId, params }) =>
         new Promise((resolve, reject) => {
           const callback = (result) => {
             // Clean listening
@@ -36,17 +35,27 @@ export const handleSuperSocket = (socket) => {
     });
 
     socket.on('unregister', ({ name }) => {
-      delete rooms[roomName][name];
+      delete rooms[roomName].rpc[name];
+      socket.emit(`unregister.${name}`);
     });
 
     // Call function from another client
     socket.on('call', async ({ name, callId, params }) => {
-      const result = await rooms[roomName][name]({ callId, params });
-      socket.emit(`result.${callId}`, result);
+      if (rooms[roomName].rpc[name] === undefined) {
+        socket.emit(`result.${callId}`, {
+          err: `Function ${name} is not registered`,
+        });
+      } else {
+        const result = await rooms[roomName].rpc[name]({
+          callId,
+          params,
+        });
+        socket.emit(`result.${callId}`, result);
+      }
     });
 
     socket.emit('roomJoined');
   });
 };
 
-export default handleSuperSocket;
+export default handleC2C;
