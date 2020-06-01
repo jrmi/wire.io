@@ -1,6 +1,6 @@
 {
   "name": "client2client.io",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Socket.io wrapper to enable client to client communications like RPC and pub/sub.",
   "main": "lib/index.js",
   "keywords": [],
