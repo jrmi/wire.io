@@ -3,6 +3,8 @@ import { nanoid } from 'nanoid';
 class Client2CLient {
   constructor(socket) {
     this._socket = socket;
+    this.userId = null;
+    socket.on('roomJoined', (userId) => (this.userId = userId));
   }
 
   /**
@@ -91,5 +93,8 @@ export const joinClient2Client = (socket, name, onMaster = () => {}) => {
     socket.emit('joinSuperSocket', { name });
   });
 };
+
+// TODO should return disconnect all
+// TODO handle onMaster
 
 export default joinClient2Client;

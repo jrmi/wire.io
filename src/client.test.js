@@ -1,17 +1,19 @@
 import io from 'socket.io-client';
 import join from './client';
 
+const port = process.env.PORT || 4000;
+
 describe('Client', () => {
   let socket1 = null;
   let socket2 = null;
   beforeEach((done) => {
-    socket1 = io.connect('http://localhost:4000', {
+    socket1 = io.connect(`http://localhost:${port}`, {
       'reconnection delay': 0,
       'reopen delay': 0,
       forceNew: true,
     });
     socket1.on('connect', function () {
-      socket2 = io.connect('http://localhost:4000', {
+      socket2 = io.connect(`http://localhost:${port}`, {
         'reconnection delay': 0,
         'reopen delay': 0,
         forceNew: true,
@@ -36,6 +38,8 @@ describe('Client', () => {
   it('connect to room', async () => {
     const room = await join(socket1, 'test');
     expect(room).toBeDefined();
+    expect(room.userId).toBeDefined();
+    expect(room.userId).not.toBe(null);
   });
 
   it('should receive published event', async (done) => {
@@ -48,7 +52,7 @@ describe('Client', () => {
     room2.publish('testevent', { test: 'test' });
   });
 
-  it('should not receive published event if unscribed', async () => {
+  it('should not receive published event if unsubcribed', async () => {
     const room1 = await join(socket1, 'test');
     const room2 = await join(socket2, 'test');
 
@@ -59,6 +63,27 @@ describe('Client', () => {
     room2.publish('testevent', { test: 'test' });
 
     expect(callback).not.toHaveBeenCalled();
+  });
+
+  it('should receive incoming user event', async (done) => {
+    const room1 = await join(socket1, 'test');
+    room1.subscribe('userEnter', (params) => {
+      expect(params).toBeDefined();
+      done();
+    });
+
+    const room2 = await join(socket2, 'test');
+  });
+
+  it('should receive user leave event', async (done) => {
+    const room1 = await join(socket1, 'test');
+    room1.subscribe('userLeave', (params) => {
+      expect(params).toBeDefined();
+      done();
+    });
+
+    const room2 = await join(socket2, 'test');
+    socket2.disconnect();
   });
 
   it('should receive self published event', async (done) => {
@@ -74,13 +99,14 @@ describe('Client', () => {
     const room1 = await join(socket1, 'test');
     const room2 = await join(socket2, 'test');
 
-    const unregister = room1.register('testrpc', (params) => {
+    room1.register('testrpc', (params) => {
       expect(params).toEqual({ test: 'test' });
-      return 42;
+      return { answer: 42 };
     });
+
     const result = await room2.call('testrpc', { test: 'test' });
 
-    expect(result).toBe(42);
+    expect(result).toEqual({ answer: 42 });
   });
 
   it('should unregister remote function', async (done) => {

@@ -1,3 +1,5 @@
+import { nanoid } from 'nanoid';
+
 const rooms = {};
 
 export const handleC2C = (socket) => {
@@ -7,6 +9,10 @@ export const handleC2C = (socket) => {
     if (rooms[roomName] === undefined) {
       rooms[roomName] = { users: [], rpc: {} };
     }
+
+    const userId = nanoid();
+
+    //rooms[roomName].users.push(userId);
 
     // Publish event to others and self if `self`
     socket.on('publish', ({ name, params, self }) => {
@@ -54,7 +60,15 @@ export const handleC2C = (socket) => {
       }
     });
 
-    socket.emit('roomJoined');
+    socket.on('disconnect', () => {
+      /*rooms[roomName].users = rooms[roomName].users.filter(
+        (id) => id !== userId
+      );*/
+      socket.broadcast.to(roomName).emit('userLeave', userId);
+    });
+
+    socket.emit('roomJoined', userId);
+    socket.broadcast.to(roomName).emit('userEnter', userId);
   });
 };
 
