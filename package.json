@@ -1,17 +1,18 @@
 {
   "name": "client2client.io",
   "version": "1.0.0",
-  "description": "Socket io wrapper to enable client to client communications like RPC and pub/sub.",
-  "main": "index.js",
+  "description": "Socket.io wrapper to enable client to client communications like RPC and pub/sub.",
+  "main": "lib/index.js",
   "keywords": [],
-  "author": "",
+  "author": "Jérémie Pardou",
   "license": "ISC",
   "scripts": {
     "clean": "rm ./lib/ -r",
     "test": "jest --watch",
     "coverage": "jest --coverage",
     "prepublish": "babel src --out-dir lib --ignore '**/*.test.js' --ignore '**/app.js'",
-    "server": "nodemon src/app.js --exec babel-node"
+    "server": "nodemon src/app.js --exec babel-node",
+    "version": "git changelog -n -t $npm_package_version && git add CHANGELOG.md"
   },
   "dependencies": {
     "nanoid": "^3.1.9"

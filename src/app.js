@@ -1,6 +1,6 @@
 // Test app
 import express from 'express';
-import { handleClient2Client } from '.';
+import { handleC2C } from '.';
 
 var app = express();
 var http = require('http').createServer(app);
@@ -13,5 +13,5 @@ http.listen(port, () => {
 });
 
 io.on('connection', (socket) => {
-  handleClient2Client(socket);
+  handleC2C(socket);
 });
