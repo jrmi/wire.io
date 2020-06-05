@@ -11,6 +11,7 @@ export const handleC2C = (socket) => {
     }
 
     const userId = nanoid();
+    console.log('user', userId, 'joined');
 
     //rooms[roomName].users.push(userId);
 
@@ -25,18 +26,25 @@ export const handleC2C = (socket) => {
     // Register new remote function
     socket.on('register', ({ name }) => {
       // Define function for the room
-      rooms[roomName].rpc[name] = ({ callId, params }) =>
-        new Promise((resolve, reject) => {
-          const callback = (result) => {
-            // Clean listening
-            socket.off(`result.${callId}`, callback);
-            resolve(result);
-          };
-          // Schedule result
-          socket.on(`result.${callId}`, callback);
-          // Call function from client
-          socket.emit(`call.${name}`, { callId, params });
+      rooms[roomName].rpc[name] = ({ callId, params }) => {
+        return new Promise((resolve, reject) => {
+          if (!socket.connected) {
+            // Handle case of disconnected socket
+            delete rooms[roomName].rpc[name];
+            resolve({ err: `Function ${name} is not registered` });
+          } else {
+            const callback = (result) => {
+              // Clean listening
+              socket.off(`result.${callId}`, callback);
+              resolve(result);
+            };
+            // Schedule result
+            socket.on(`result.${callId}`, callback);
+            // Call function from client
+            socket.emit(`call.${name}`, { callId, params });
+          }
         });
+      };
       socket.emit(`register.${name}`);
     });
 
