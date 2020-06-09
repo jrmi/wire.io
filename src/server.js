@@ -11,9 +11,17 @@ export const handleC2C = (socket) => {
     }
 
     const userId = nanoid();
-    console.log('user', userId, 'joined');
 
-    //rooms[roomName].users.push(userId);
+    const isMaster = rooms[roomName].users.length === 0;
+    const promoteMaster = () => {
+      socket.emit('isMaster');
+    };
+
+    rooms[roomName].users.push({
+      userId,
+      promoteMaster,
+      isMaster,
+    });
 
     // Publish event to others and self if `self`
     socket.on('publish', ({ name, params, self }) => {
@@ -69,14 +77,26 @@ export const handleC2C = (socket) => {
     });
 
     socket.on('disconnect', () => {
-      /*rooms[roomName].users = rooms[roomName].users.filter(
-        (id) => id !== userId
-      );*/
+      rooms[roomName].users = rooms[roomName].users.filter(
+        ({ userId: uid }) => uid !== userId
+      );
+      // Promote the first user if master is gone
+      if (
+        rooms[roomName].users.length > 0 &&
+        !rooms[roomName].users[0].isMaster
+      ) {
+        rooms[roomName].users[0].isMaster = true;
+        rooms[roomName].users[0].promoteMaster();
+      }
       socket.broadcast.to(roomName).emit('userLeave', userId);
     });
 
+    if (isMaster) {
+      promoteMaster();
+    }
     socket.emit('roomJoined', userId);
     socket.broadcast.to(roomName).emit('userEnter', userId);
+    console.log('User', userId, 'joined.' + (isMaster ? 'Is master.' : ''));
   });
 };
 

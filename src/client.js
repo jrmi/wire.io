@@ -55,14 +55,14 @@ class Client2CLient {
             new Promise((resolve) => {
               const unregisterCallback = () => {
                 this._socket.off(`call.${name}`, toBeCalled);
-                this._socket.off(`unregister.${name}`, unregisterCallback)
+                this._socket.off(`unregister.${name}`, unregisterCallback);
                 resolve();
-              }
+              };
               this._socket.on(`unregister.${name}`, unregisterCallback);
               this._socket.emit('unregister', { name });
             })
         );
-      }
+      };
       this._socket.on(`register.${name}`, registerCallback);
       this._socket.emit('register', { name });
     });
@@ -99,6 +99,9 @@ class Client2CLient {
 export const joinClient2Client = (socket, name, onMaster = () => {}) => {
   const room = new Client2CLient(socket);
   return new Promise((resolve, reject) => {
+    socket.on('isMaster', () => {
+      onMaster();
+    });
     socket.on('roomJoined', () => {
       resolve(room);
     });

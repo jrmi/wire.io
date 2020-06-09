@@ -161,4 +161,23 @@ describe('Client', () => {
       done();
     }
   });
+
+  it('should call onMaster callback', async (done) => {
+    const onMaster1 = jest.fn();
+    const onMaster2 = jest.fn();
+
+    const room1 = await join(socket1, 'test2', onMaster1);
+    const room2 = await join(socket2, 'test2', onMaster2);
+
+    expect(onMaster1).toHaveBeenCalled();
+    expect(onMaster2).not.toHaveBeenCalled();
+
+    socket1.disconnect();
+
+    // Hard wait as there is no way to wait for server to finish is work
+    setTimeout(() => {
+      expect(onMaster2).toHaveBeenCalled();
+      done();
+    }, 200);
+  });
 });
