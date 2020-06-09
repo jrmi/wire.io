@@ -100,7 +100,7 @@ export const joinClient2Client = (socket, name, onMaster = () => {}) => {
   const room = new Client2CLient(socket);
   return new Promise((resolve, reject) => {
     socket.on('isMaster', () => {
-      onMaster();
+      onMaster(room);
     });
     socket.on('roomJoined', () => {
       resolve(room);
