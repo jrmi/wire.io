@@ -1,4 +1,10 @@
 
+1.2.0 / 2020-06-09
+==================
+
+  * Add master event when user became master
+  * Fix multiple RPC result on one call
+
 1.1.1 / 2020-06-05
 ==================
 
