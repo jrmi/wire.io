@@ -33,27 +33,39 @@ class Client2CLient {
   /**
    * Register a new RPC function.
    * @param {string} name of function
-   * @param {function} callback the function executed when the RPC is done
+   * @param {function} callback the function that handle the function result
    */
   register(name, callback, { force = false } = {}) {
-    this._socket.on(`register.${name}`, () => {
-      this._socket.on(`call.${name}`, ({ callId, params }) => {
-        try {
-          const result = callback(params);
-          this._socket.emit(`result.${callId}`, {
-            ok: result,
-          });
-        } catch (err) {
-          this._socket.emit(`result.${callId}`, { err: '' + err });
-        }
-      });
+    const toBeCalled = ({ callId, params }) => {
+      try {
+        const result = callback(params);
+        this._socket.emit(`result.${callId}`, {
+          ok: result,
+        });
+      } catch (err) {
+        this._socket.emit(`result.${callId}`, { err: '' + err });
+      }
+    };
+    return new Promise((resolve) => {
+      const registerCallback = () => {
+        this._socket.off(`register.${name}`, registerCallback);
+        this._socket.on(`call.${name}`, toBeCalled);
+        resolve(
+          () =>
+            new Promise((resolve) => {
+              const unregisterCallback = () => {
+                this._socket.off(`call.${name}`, toBeCalled);
+                this._socket.off(`unregister.${name}`, unregisterCallback)
+                resolve();
+              }
+              this._socket.on(`unregister.${name}`, unregisterCallback);
+              this._socket.emit('unregister', { name });
+            })
+        );
+      }
+      this._socket.on(`register.${name}`, registerCallback);
+      this._socket.emit('register', { name });
     });
-    this._socket.emit('register', { name });
-    return () =>
-      new Promise((resolve) => {
-        this._socket.on(`unregister.${name}`, resolve);
-        this._socket.emit('unregister', { name });
-      });
   }
 
   /**
@@ -62,8 +74,8 @@ class Client2CLient {
    * @param {*} params arguments of the called function.
    */
   call(name, params) {
-    const callId = nanoid();
     return new Promise((resolve, reject) => {
+      const callId = nanoid();
       this._socket.on(`result.${callId}`, (result) => {
         if (result.hasOwnProperty('ok')) {
           resolve(result.ok);

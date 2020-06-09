@@ -99,39 +99,48 @@ describe('Client', () => {
     const room1 = await join(socket1, 'test');
     const room2 = await join(socket2, 'test');
 
-    room1.register('testrpc', (params) => {
-      expect(params).toEqual({ test: 'test' });
+    await room1.register('testrpc', (params) => {
+      expect(params).toEqual({ test: 'testa' });
       return { answer: 42 };
     });
 
-    const result = await room2.call('testrpc', { test: 'test' });
+    const result = await room2.call('testrpc', { test: 'testa' });
 
     expect(result).toEqual({ answer: 42 });
   });
 
-  it('should unregister remote function', async (done) => {
+  it('should unregister/register remote function', async () => {
     const room1 = await join(socket1, 'test');
     const room2 = await join(socket2, 'test');
 
-    const unregister = room1.register('testrpc', (params) => {
-      return 42;
-    });
+    const firstCallback = jest.fn();
+
+    const unregister = await room1.register('testrpcwithunreg', firstCallback);
 
     await unregister();
 
     try {
-      await room2.call('testrpc', { test: 'test' });
+      await room2.call('testrpcwithunreg', { test: 'test0' });
     } catch (err) {
-      expect(err).toBe('Function testrpc is not registered');
-      done();
+      expect(err).toBe('Function testrpcwithunreg is not registered');
     }
+
+    await room1.register('testrpcwithunreg', (params) => {
+      return 42;
+    });
+
+    const result = await room2.call('testrpcwithunreg', { test: 'test1' });
+
+    expect(result).toBe(42);
+
+    expect(firstCallback).not.toHaveBeenCalled();
   });
 
   it('should not call not registered remote function', async (done) => {
     const room2 = await join(socket2, 'test');
 
     try {
-      await room2.call('testrpc', { test: 'test' });
+      await room2.call('testrpc', { test: 'testbis' });
     } catch (err) {
       expect(err).toBe('Function testrpc is not registered');
       done();
@@ -142,11 +151,11 @@ describe('Client', () => {
     const room1 = await join(socket1, 'test');
     const room2 = await join(socket2, 'test');
 
-    const unregister = room1.register('testrpc', (params) => {
+    await room1.register('testrpc', (params) => {
       throw new Error('test error');
     });
     try {
-      await room2.call('testrpc', { test: 'test' });
+      await room2.call('testrpc', { test: 'testerror' });
     } catch (err) {
       expect(err).toBe('Error: test error');
       done();
