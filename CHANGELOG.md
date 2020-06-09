@@ -1,4 +1,10 @@
 
+1.2.1 / 2020-06-09
+==================
+
+  * Add room parameter to onMaster callback
+  * Update readme
+
 1.2.0 / 2020-06-09
 ==================
 
