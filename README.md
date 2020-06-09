@@ -1,8 +1,22 @@
-# super-socket.io
+# Client2client.io
 
-Empty project.
+A web client to client communication channel that mimic WAMP protocol. You can pub/sub event and make RPC calls.
+Way mush simpler and light than Autobahn and don't need a fat router when you need something less powerfull. It based on
+venerable and very usefull [socket.io](https://socket.io/).
 
-## Building and running on localhost
+## Installation
+
+```sh
+npm install client2client.io
+```
+
+## Usage
+
+Client2client relay on using [socket.io](https://socket.io/) on server and client.
+
+TBD
+
+## Dev installation
 
 First install dependencies:
 
@@ -10,25 +24,14 @@ First install dependencies:
 npm install
 ```
 
-To run in hot module reloading mode:
+Start the server:
 
 ```sh
-npm start
+npm run server
 ```
 
-To create a production build:
+Then run tests:
 
 ```sh
-npm run build-prod
+npm test
 ```
-
-## Running
-
-```sh
-node dist/bundle.js
-```
-
-## Credits
-
-Made with [createapp.dev](https://createapp.dev/)
-
