@@ -1,4 +1,12 @@
 
+1.3.0 / 2020-07-31
+==================
+
+  * Change room creation API
+  * Add onJoin callback and handle reconnection
+  * Allow async registered callback
+  * Bump lodash from 4.17.15 to 4.17.19
+
 1.2.1 / 2020-06-09
 ==================
 
