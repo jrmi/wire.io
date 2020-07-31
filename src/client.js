@@ -36,9 +36,9 @@ class Client2CLient {
    * @param {function} callback the function that handle the function result
    */
   register(name, callback, { force = false } = {}) {
-    const toBeCalled = ({ callId, params }) => {
+    const toBeCalled = async ({ callId, params }) => {
       try {
-        const result = callback(params);
+        const result = await callback(params);
         this._socket.emit(`result.${callId}`, {
           ok: result,
         });
