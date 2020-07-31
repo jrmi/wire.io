@@ -3,14 +3,14 @@ import { nanoid } from 'nanoid';
 const rooms = {};
 
 export const handleC2C = (socket) => {
-  socket.on('joinSuperSocket', ({ name: roomName }) => {
+  socket.on('joinSuperSocket', ({ name: roomName, userId: givenUserId }) => {
     socket.join(roomName);
 
     if (rooms[roomName] === undefined) {
       rooms[roomName] = { users: [], rpc: {} };
     }
 
-    const userId = nanoid();
+    const userId = givenUserId || nanoid();
 
     const isMaster = rooms[roomName].users.length === 0;
     const promoteMaster = () => {
