@@ -1,10 +1,9 @@
 import { nanoid } from 'nanoid';
 
 class Client2CLient {
-  constructor(socket) {
+  constructor(socket, userId = null) {
     this._socket = socket;
-    this.userId = null;
-    socket.on('roomJoined', (userId) => (this.userId = userId));
+    this.userId = userId;
   }
 
   /**
@@ -95,21 +94,34 @@ class Client2CLient {
  * @param {string} name of the room
  * @param {function} onMaster is called when the client became the master of
  *   the room, i.e. the first client or the next one if the first quit.
+ * @param {function} onJoined is called on each connection, reconnection after
+ *   client2client is initialized.
+ * @param {string} userId (optionnal) to force userId.
  */
-export const joinClient2Client = (socket, name, onMaster = () => {}) => {
-  const room = new Client2CLient(socket);
+export const joinClient2Client = ({
+  socket,
+  room: name,
+  onJoined = () => {},
+  onMaster = () => {},
+  userId = null,
+}) => {
+  const room = new Client2CLient(socket, userId);
   return new Promise((resolve, reject) => {
     socket.on('isMaster', () => {
       onMaster(room);
     });
-    socket.on('roomJoined', () => {
+    socket.on('roomJoined', (userId) => {
+      room.userId = userId;
+      onJoined(room);
       resolve(room);
     });
-    socket.emit('joinSuperSocket', { name });
+    // Relaunch on reconnection
+    socket.on('reconnect', () => {
+      // Restore events with same userId
+      socket.emit('joinSuperSocket', { name, userId: room.userId });
+    });
+    socket.emit('joinSuperSocket', { name, userId });
   });
 };
-
-// TODO should return disconnect all
-// TODO handle onMaster
 
 export default joinClient2Client;

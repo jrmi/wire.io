@@ -36,15 +36,15 @@ describe('Client', () => {
   });
 
   it('connect to room', async () => {
-    const room = await join(socket1, 'test');
+    const room = await join({ socket: socket1, room: 'test' });
     expect(room).toBeDefined();
     expect(room.userId).toBeDefined();
     expect(room.userId).not.toBe(null);
   });
 
   it('should receive published event', async (done) => {
-    const room1 = await join(socket1, 'test');
-    const room2 = await join(socket2, 'test');
+    const room1 = await join({ socket: socket1, room: 'test' });
+    const room2 = await join({ socket: socket2, room: 'test' });
     room1.subscribe('testevent', (params) => {
       expect(params).toEqual({ test: 'test' });
       done();
@@ -53,8 +53,8 @@ describe('Client', () => {
   });
 
   it('should not receive published event if unsubcribed', async () => {
-    const room1 = await join(socket1, 'test');
-    const room2 = await join(socket2, 'test');
+    const room1 = await join({ socket: socket1, room: 'test' });
+    const room2 = await join({ socket: socket2, room: 'test' });
 
     const callback = jest.fn();
     const unsubscribe = room1.subscribe('testevent', callback);
@@ -66,28 +66,29 @@ describe('Client', () => {
   });
 
   it('should receive incoming user event', async (done) => {
-    const room1 = await join(socket1, 'test');
+    const room1 = await join({ socket: socket1, room: 'test' });
+
     room1.subscribe('userEnter', (params) => {
       expect(params).toBeDefined();
       done();
     });
 
-    const room2 = await join(socket2, 'test');
+    const room2 = await join({ socket: socket2, room: 'test' });
   });
 
   it('should receive user leave event', async (done) => {
-    const room1 = await join(socket1, 'test');
+    const room1 = await join({ socket: socket1, room: 'test' });
     room1.subscribe('userLeave', (params) => {
       expect(params).toBeDefined();
       done();
     });
 
-    const room2 = await join(socket2, 'test');
+    const room2 = await join({ socket: socket2, room: 'test' });
     socket2.disconnect();
   });
 
   it('should receive self published event', async (done) => {
-    const room1 = await join(socket1, 'test');
+    const room1 = await join({ socket: socket1, room: 'test' });
     room1.subscribe('testevent', (params) => {
       expect(params).toEqual({ test: 'test' });
       done();
@@ -96,8 +97,8 @@ describe('Client', () => {
   });
 
   it('should call remote function', async () => {
-    const room1 = await join(socket1, 'test');
-    const room2 = await join(socket2, 'test');
+    const room1 = await join({ socket: socket1, room: 'test' });
+    const room2 = await join({ socket: socket2, room: 'test' });
 
     await room1.register('testrpc', (params) => {
       expect(params).toEqual({ test: 'testa' });
@@ -109,9 +110,23 @@ describe('Client', () => {
     expect(result).toEqual({ answer: 42 });
   });
 
+  it('should call remote async function', async () => {
+    const room1 = await join({ socket: socket1, room: 'test' });
+    const room2 = await join({ socket: socket2, room: 'test' });
+
+    await room1.register('testrpc', async (params) => {
+      expect(params).toEqual({ test: 'testa' });
+      return { answer: 42 };
+    });
+
+    const result = await room2.call('testrpc', { test: 'testa' });
+
+    expect(result).toEqual({ answer: 42 });
+  });
+
   it('should unregister/register remote function', async () => {
-    const room1 = await join(socket1, 'test');
-    const room2 = await join(socket2, 'test');
+    const room1 = await join({ socket: socket1, room: 'test' });
+    const room2 = await join({ socket: socket2, room: 'test' });
 
     const firstCallback = jest.fn();
 
@@ -137,7 +152,7 @@ describe('Client', () => {
   });
 
   it('should not call not registered remote function', async (done) => {
-    const room2 = await join(socket2, 'test');
+    const room2 = await join({ socket: socket2, room: 'test' });
 
     try {
       await room2.call('testrpc', { test: 'testbis' });
@@ -148,8 +163,8 @@ describe('Client', () => {
   });
 
   it('should call remote function with exception', async (done) => {
-    const room1 = await join(socket1, 'test');
-    const room2 = await join(socket2, 'test');
+    const room1 = await join({ socket: socket1, room: 'test' });
+    const room2 = await join({ socket: socket2, room: 'test' });
 
     await room1.register('testrpc', (params) => {
       throw new Error('test error');
@@ -166,8 +181,16 @@ describe('Client', () => {
     const onMaster1 = jest.fn();
     const onMaster2 = jest.fn();
 
-    const room1 = await join(socket1, 'test2', onMaster1);
-    const room2 = await join(socket2, 'test2', onMaster2);
+    const room1 = await join({
+      socket: socket1,
+      room: 'test',
+      onMaster: onMaster1,
+    });
+    const room2 = await join({
+      socket: socket2,
+      room: 'test',
+      onMaster: onMaster2,
+    });
 
     expect(onMaster1).toHaveBeenCalled();
     expect(onMaster2).not.toHaveBeenCalled();
@@ -179,5 +202,30 @@ describe('Client', () => {
       expect(onMaster2).toHaveBeenCalled();
       done();
     }, 200);
+  });
+
+  it('should call onJoin callback', async () => {
+    const onJoin1 = jest.fn();
+
+    const s = await join({
+      socket: socket1,
+      room: 'test',
+      onJoined: onJoin1,
+    });
+
+    expect(onJoin1).toHaveBeenCalled();
+  });
+
+  it('should force userId', async () => {
+    const onJoin1 = jest.fn();
+
+    const s = await join({
+      socket: socket1,
+      room: 'test',
+      onJoined: onJoin1,
+      userId: 'testid',
+    });
+
+    expect(onJoin1.mock.calls[0][0].userId).toBe('testid');
   });
 });
