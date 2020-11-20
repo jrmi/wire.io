@@ -31,7 +31,11 @@ http.listen(port, () => {
 });
 
 io.on('connection', (socket) => {
-  handleC2C(socket);
+  const options = { // This are defaults
+    log: console.log;
+    logPrefix = '[c2c]'
+  }
+  handleC2C(socket, options); // Option is optionnal
 });
 ```
 

@@ -2,7 +2,10 @@ import { nanoid } from 'nanoid';
 
 const rooms = {};
 
-export const handleC2C = (socket) => {
+export const handleC2C = (
+  socket,
+  { log = console.log, logPrefix = '[c2c] ' } = {}
+) => {
   socket.on('joinSuperSocket', ({ name: roomName, userId: givenUserId }) => {
     socket.join(roomName);
 
@@ -12,8 +15,10 @@ export const handleC2C = (socket) => {
 
     const userId = givenUserId || nanoid();
 
-    const isMaster = rooms[roomName].users.length === 0;
+    let isMaster = rooms[roomName].users.length === 0;
+
     const promoteMaster = () => {
+      isMaster = true;
       socket.emit('isMaster');
     };
 
@@ -80,13 +85,21 @@ export const handleC2C = (socket) => {
       rooms[roomName].users = rooms[roomName].users.filter(
         ({ userId: uid }) => uid !== userId
       );
+      log(
+        `${logPrefix}User ${userId} quit room ${roomName}.${
+          isMaster ? ' Was room master. ' : ''
+        } ${rooms[roomName].users.length} user(s) left.`
+      );
+
       // Promote the first user if master is gone
       if (
         rooms[roomName].users.length > 0 &&
         !rooms[roomName].users[0].isMaster
       ) {
-        rooms[roomName].users[0].isMaster = true;
-        rooms[roomName].users[0].promoteMaster();
+        const user = rooms[roomName].users[0];
+        user.isMaster = true;
+        user.promoteMaster();
+        log(`${logPrefix}Promote ${user.userId} master of room ${roomName}`);
       }
       socket.broadcast.to(roomName).emit('userLeave', userId);
     });
@@ -96,7 +109,11 @@ export const handleC2C = (socket) => {
     }
     socket.emit('roomJoined', userId);
     socket.broadcast.to(roomName).emit('userEnter', userId);
-    console.log('User', userId, 'joined.' + (isMaster ? 'Is master.' : ''));
+    log(
+      `${logPrefix}User ${userId} joined room ${roomName}.${
+        isMaster ? ' Is room master.' : ''
+      } Room has ${rooms[roomName].users.length} user(s)`
+    );
   });
 };
 
