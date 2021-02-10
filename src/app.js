@@ -23,6 +23,10 @@ io.on('connection', (socket) => {
   handleC2C(socket);
 });
 
+app.get('/', (req, res) => {
+  res.send('Ok');
+});
+
 http.listen(port, () => {
   console.log(`listening on *:${port}`);
 });
