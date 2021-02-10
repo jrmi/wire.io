@@ -4,6 +4,8 @@ A web client to client communication channel that mimic [WAMP protocol](https://
 Way mush simpler and light than Autobahn and don't need a fat router when you need something less powerfull. It based on
 venerable and very usefull [socket.io](https://socket.io/).
 
+Compatible with 2.X and 3.X version of socket.io.
+
 ## Installation
 
 ```sh
@@ -67,7 +69,7 @@ const room = await join({
 
 ## API
 
-All call are client side. Since you have the room instance you can comunicate with other client with this API.
+All calls are client side. Since you have the room instance you can comunicate with other client with this API.
 
 ### .publish("eventName", params, self=false)
 
