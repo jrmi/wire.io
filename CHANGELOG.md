@@ -1,4 +1,10 @@
 
+1.3.2 / 2021-02-10
+==================
+
+  * Add CI
+  * Update socket to latest version and ensure compat
+
 1.3.1 / 2020-11-20
 ==================
 
