@@ -15,20 +15,21 @@
     "version": "git changelog -n -t $npm_package_version && git add CHANGELOG.md"
   },
   "dependencies": {
-    "nanoid": "^3.1.9"
+    "nanoid": "^3.1.20"
   },
   "devDependencies": {
-    "socket.io": "^2.3.0",
-    "express": "^4.17.1",
     "@babel/cli": "^7.10.1",
     "@babel/core": "^7.10.2",
     "@babel/node": "^7.10.1",
     "@babel/preset-env": "^7.10.1",
     "babel-jest": "^26.0.1",
+    "express": "^4.17.1",
     "jest": "^26.0.1",
     "jest-transform-stub": "^2.0.0",
     "nodemon": "^2.0.4",
-    "prettier": "^2.0.5"
+    "prettier": "^2.0.5",
+    "socket.io-client": "^3.1.1",
+    "socket.io": "^3.1.1"
   },
   "jest": {
     "transform": {
