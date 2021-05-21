@@ -42,7 +42,8 @@ class Client2CLient {
    * @param {string} name of function
    * @param {function} callback the function that handle the function result
    */
-  register(name, callback, { force = false } = {}) {
+  register(name, callback) {
+    // Executed when another client call the function
     const toBeCalled = async ({ callId, params }) => {
       try {
         const result = await callback(params);
@@ -50,33 +51,25 @@ class Client2CLient {
           ok: result,
         });
       } catch (err) {
+        // Error handling
         this._socket.emit(`${this.room}.result.${callId}`, { err: '' + err });
       }
     };
     return new Promise((resolve) => {
-      const registerCallback = () => {
-        this._socket.off(`${this.room}.register.${name}`, registerCallback);
+      this._socket.once(`${this.room}.register.${name}`, () => {
         this._socket.on(`${this.room}.call.${name}`, toBeCalled);
+        // Return unregister function
         resolve(
           () =>
             new Promise((resolve) => {
-              const unregisterCallback = () => {
-                this._socket.off(`${this.room}.call.${name}`, toBeCalled);
-                this._socket.off(
-                  `${this.room}.unregister.${name}`,
-                  unregisterCallback
-                );
+              this._socket.once(`${this.room}.unregister.${name}`, () => {
+                this._socket.off(`${this.room}.call.${name}`);
                 resolve();
-              };
-              this._socket.on(
-                `${this.room}.unregister.${name}`,
-                unregisterCallback
-              );
+              });
               this._socket.emit(`${this.room}.unregister`, { name });
             })
         );
-      };
-      this._socket.on(`${this.room}.register.${name}`, registerCallback);
+      });
       this._socket.emit(`${this.room}.register`, { name });
     });
   }
@@ -89,13 +82,12 @@ class Client2CLient {
   call(name, params) {
     return new Promise((resolve, reject) => {
       const callId = nanoid();
-      this._socket.on(`${this.room}.result.${callId}`, (result) => {
+      this._socket.once(`${this.room}.result.${callId}`, (result) => {
         if (result.hasOwnProperty('ok')) {
           resolve(result.ok);
         } else {
           reject(result.err);
         }
-        this._socket.off(`${this.room}.result.${callId}`);
       });
       this._socket.emit(`${this.room}.call`, { name, callId, params });
     });

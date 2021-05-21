@@ -73,24 +73,21 @@ All calls are client side. Since you have the room instance you can comunicate w
 
 ### .publish("eventName", params, self=false)
 
-Send an event to all other client in room. Also to self if true.
+Send an event to all other clients in room. Also to self if true.
 `params` can be any js type that is serializable.
 
 ### .subsribe("eventName", callback) -> unsubscribe callback
 
 Subscribe the callback to an event. The callback receive the params data if any.
 
-### .register("functionName", callback, force=false) -> unregister callback
+### .register("functionName", callback) -> unregister callback
 
 Register a function to be called by other clients. If any client use `.call` with the same function name,
  the callback will be called with the given parameters.
 
-`force` parameter force registration even if the function have already been registered.
-
 ### .call("functionName", params) -> call result
 
-Call a previously registered function. Return the RPC result.
-
+Call a previously registered function. Return the call result.
 
 ## Dev installation
 

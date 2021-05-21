@@ -46,13 +46,10 @@ export const handleC2C = (
             delete rooms[roomName].rpc[name];
             resolve({ err: `Function ${name} is not registered` });
           } else {
-            const callback = (result) => {
-              // Clean listening
-              socket.off(`${roomName}.result.${callId}`, callback);
-              resolve(result);
-            };
             // Schedule result
-            socket.on(`${roomName}.result.${callId}`, callback);
+            socket.once(`${roomName}.result.${callId}`, (result) => {
+              resolve(result);
+            });
             // Call function from client
             socket.emit(`${roomName}.call.${name}`, { callId, params });
           }
