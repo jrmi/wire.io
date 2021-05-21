@@ -1,9 +1,17 @@
 import { nanoid } from 'nanoid';
 
 class Client2CLient {
-  constructor(socket, userId = null) {
+  constructor(socket, room, userId = null) {
     this._socket = socket;
     this.userId = userId;
+    this.room = room;
+  }
+  /**
+   * Leave current room
+   * @param {string} room name.
+   */
+  leave() {
+    this._socket.emit(`${this.room}.leave`);
   }
 
   /**
@@ -13,7 +21,7 @@ class Client2CLient {
    * @param {boolean} self if true, the publish get the event too
    */
   publish(name, params, self = false) {
-    this._socket.emit('publish', { name, params, self });
+    this._socket.emit(`${this.room}.publish`, { name, params, self });
   }
 
   /**
@@ -38,32 +46,38 @@ class Client2CLient {
     const toBeCalled = async ({ callId, params }) => {
       try {
         const result = await callback(params);
-        this._socket.emit(`result.${callId}`, {
+        this._socket.emit(`${this.room}.result.${callId}`, {
           ok: result,
         });
       } catch (err) {
-        this._socket.emit(`result.${callId}`, { err: '' + err });
+        this._socket.emit(`${this.room}.result.${callId}`, { err: '' + err });
       }
     };
     return new Promise((resolve) => {
       const registerCallback = () => {
-        this._socket.off(`register.${name}`, registerCallback);
-        this._socket.on(`call.${name}`, toBeCalled);
+        this._socket.off(`${this.room}.register.${name}`, registerCallback);
+        this._socket.on(`${this.room}.call.${name}`, toBeCalled);
         resolve(
           () =>
             new Promise((resolve) => {
               const unregisterCallback = () => {
-                this._socket.off(`call.${name}`, toBeCalled);
-                this._socket.off(`unregister.${name}`, unregisterCallback);
+                this._socket.off(`${this.room}.call.${name}`, toBeCalled);
+                this._socket.off(
+                  `${this.room}.unregister.${name}`,
+                  unregisterCallback
+                );
                 resolve();
               };
-              this._socket.on(`unregister.${name}`, unregisterCallback);
-              this._socket.emit('unregister', { name });
+              this._socket.on(
+                `${this.room}.unregister.${name}`,
+                unregisterCallback
+              );
+              this._socket.emit(`${this.room}.unregister`, { name });
             })
         );
       };
-      this._socket.on(`register.${name}`, registerCallback);
-      this._socket.emit('register', { name });
+      this._socket.on(`${this.room}.register.${name}`, registerCallback);
+      this._socket.emit(`${this.room}.register`, { name });
     });
   }
 
@@ -75,22 +89,22 @@ class Client2CLient {
   call(name, params) {
     return new Promise((resolve, reject) => {
       const callId = nanoid();
-      this._socket.on(`result.${callId}`, (result) => {
+      this._socket.on(`${this.room}.result.${callId}`, (result) => {
         if (result.hasOwnProperty('ok')) {
           resolve(result.ok);
         } else {
           reject(result.err);
         }
-        this._socket.off(`result.${callId}`);
+        this._socket.off(`${this.room}.result.${callId}`);
       });
-      this._socket.emit(`call`, { name, callId, params });
+      this._socket.emit(`${this.room}.call`, { name, callId, params });
     });
   }
 }
 
 /**
  * Join a super socket room.
- * @param {socket} socket socket.io socket object.
+ * @param {socket} socket socket.io instance.
  * @param {string} name of the room
  * @param {function} onMaster is called when the client became the master of
  *   the room, i.e. the first client or the next one if the first quit.
@@ -100,27 +114,27 @@ class Client2CLient {
  */
 export const joinClient2Client = ({
   socket,
-  room: name,
+  room,
   onJoined = () => {},
   onMaster = () => {},
   userId = null,
 }) => {
-  const room = new Client2CLient(socket, userId);
-  return new Promise((resolve, reject) => {
-    socket.on('isMaster', () => {
+  const C2Croom = new Client2CLient(socket, room, userId);
+  return new Promise((resolve) => {
+    socket.on(`${room}.isMaster`, () => {
       onMaster(room);
     });
-    socket.on('roomJoined', (userId) => {
-      room.userId = userId;
-      onJoined(room);
-      resolve(room);
+    socket.on(`${room}.roomJoined`, (userId) => {
+      C2Croom.userId = userId;
+      onJoined(C2Croom);
+      resolve(C2Croom);
     });
     // Relaunch on reconnection
     socket.on('reconnect', () => {
       // Restore events with same userId
-      socket.emit('joinSuperSocket', { name, userId: room.userId });
+      socket.emit('joinSuperSocket', { room, userId: C2Croom.userId });
     });
-    socket.emit('joinSuperSocket', { name, userId });
+    socket.emit('joinSuperSocket', { room, userId });
   });
 };
 

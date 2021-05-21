@@ -6,7 +6,7 @@ export const handleC2C = (
   socket,
   { log = console.log, logPrefix = '[c2c] ' } = {}
 ) => {
-  socket.on('joinSuperSocket', ({ name: roomName, userId: givenUserId }) => {
+  socket.on('joinSuperSocket', ({ room: roomName, userId: givenUserId }) => {
     socket.join(roomName);
 
     if (rooms[roomName] === undefined) {
@@ -19,7 +19,7 @@ export const handleC2C = (
 
     const promoteMaster = () => {
       isMaster = true;
-      socket.emit('isMaster');
+      socket.emit(`${roomName}.isMaster`);
     };
 
     rooms[roomName].users.push({
@@ -29,7 +29,7 @@ export const handleC2C = (
     });
 
     // Publish event to others and self if `self`
-    socket.on('publish', ({ name, params, self }) => {
+    socket.on(`${roomName}.publish`, ({ name, params, self }) => {
       if (self) {
         socket.emit(name, params);
       }
@@ -37,7 +37,7 @@ export const handleC2C = (
     });
 
     // Register new remote function
-    socket.on('register', ({ name }) => {
+    socket.on(`${roomName}.register`, ({ name }) => {
       // Define function for the room
       rooms[roomName].rpc[name] = ({ callId, params }) => {
         return new Promise((resolve, reject) => {
@@ -48,28 +48,28 @@ export const handleC2C = (
           } else {
             const callback = (result) => {
               // Clean listening
-              socket.off(`result.${callId}`, callback);
+              socket.off(`${roomName}.result.${callId}`, callback);
               resolve(result);
             };
             // Schedule result
-            socket.on(`result.${callId}`, callback);
+            socket.on(`${roomName}.result.${callId}`, callback);
             // Call function from client
-            socket.emit(`call.${name}`, { callId, params });
+            socket.emit(`${roomName}.call.${name}`, { callId, params });
           }
         });
       };
-      socket.emit(`register.${name}`);
+      socket.emit(`${roomName}.register.${name}`);
     });
 
-    socket.on('unregister', ({ name }) => {
+    socket.on(`${roomName}.unregister`, ({ name }) => {
       delete rooms[roomName].rpc[name];
-      socket.emit(`unregister.${name}`);
+      socket.emit(`${roomName}.unregister.${name}`);
     });
 
     // Call function from another client
-    socket.on('call', async ({ name, callId, params }) => {
+    socket.on(`${roomName}.call`, async ({ name, callId, params }) => {
       if (rooms[roomName].rpc[name] === undefined) {
-        socket.emit(`result.${callId}`, {
+        socket.emit(`${roomName}.result.${callId}`, {
           err: `Function ${name} is not registered`,
         });
       } else {
@@ -77,11 +77,19 @@ export const handleC2C = (
           callId,
           params,
         });
-        socket.emit(`result.${callId}`, result);
+        socket.emit(`${roomName}.result.${callId}`, result);
       }
     });
 
-    socket.on('disconnect', () => {
+    socket.once(`${roomName}.leave`, ({ name }) => {
+      socket.off(`${roomName}.register`);
+      socket.off(`${roomName}.unregister`);
+      socket.off(`${roomName}.call`);
+      socket.off(`${roomName}.publish`);
+      socket.leave(roomName);
+    });
+
+    const onLeave = () => {
       rooms[roomName].users = rooms[roomName].users.filter(
         ({ userId: uid }) => uid !== userId
       );
@@ -101,14 +109,16 @@ export const handleC2C = (
         user.promoteMaster();
         log(`${logPrefix}Promote ${user.userId} master of room ${roomName}`);
       }
-      socket.broadcast.to(roomName).emit('userLeave', userId);
-    });
+      socket.broadcast.to(roomName).emit(`${roomName}.userLeave`, userId);
+    };
+
+    socket.on('disconnect', onLeave);
 
     if (isMaster) {
       promoteMaster();
     }
-    socket.emit('roomJoined', userId);
-    socket.broadcast.to(roomName).emit('userEnter', userId);
+    socket.emit(`${roomName}.roomJoined`, userId);
+    socket.broadcast.to(roomName).emit(`${roomName}.userEnter`, userId);
     log(
       `${logPrefix}User ${userId} joined room ${roomName}.${
         isMaster ? ' Is room master.' : ''
