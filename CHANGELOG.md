@@ -1,4 +1,12 @@
 
+2.0.0 / 2021-05-22
+==================
+
+  * Update babel
+  * Update socket.io
+  * Add server command
+  * Allow multi room
+
 1.3.4 / 2021-02-10
 ==================
 
