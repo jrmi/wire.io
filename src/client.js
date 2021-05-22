@@ -31,9 +31,9 @@ class Client2CLient {
    *   of the function is the params sent with the event.
    */
   subscribe(event, callback) {
-    this._socket.on(event, callback);
+    this._socket.on(`${this.room}.${event}`, callback);
     return () => {
-      this._socket.off(event, callback);
+      this._socket.off(`${this.room}.${event}`, callback);
     };
   }
 

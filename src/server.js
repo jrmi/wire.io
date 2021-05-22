@@ -31,9 +31,9 @@ export const handleC2C = (
     // Publish event to others and self if `self`
     socket.on(`${roomName}.publish`, ({ name, params, self }) => {
       if (self) {
-        socket.emit(name, params);
+        socket.emit(`${roomName}.${name}`, params);
       }
-      socket.broadcast.to(roomName).emit(name, params);
+      socket.broadcast.to(roomName).emit(`${roomName}.${name}`, params);
     });
 
     // Register new remote function
