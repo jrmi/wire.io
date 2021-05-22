@@ -17,7 +17,8 @@
     "version": "git changelog -n -t $npm_package_version && git add CHANGELOG.md"
   },
   "dependencies": {
-    "nanoid": "^3.1.20"
+    "nanoid": "^3.1.20",
+    "retry-assert": "^1.0.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.10.1",
