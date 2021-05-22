@@ -94,13 +94,13 @@ Call a previously registered function. Return the call result.
 First install dependencies:
 
 ```sh
-npm install
+npm ci
 ```
 
-Start the server:
+Start the server in watch mode:
 
 ```sh
-npm run server
+npm run dev
 ```
 
 Then run tests:
