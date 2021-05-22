@@ -85,7 +85,7 @@ describe('Client', () => {
   it('should receive incoming user event', async (done) => {
     const room1 = await join({ socket: socket1, room: 'test' });
 
-    room1.subscribe('test.userEnter', (params) => {
+    room1.subscribe('userEnter', (params) => {
       expect(params).toBeDefined();
       done();
     });
@@ -95,7 +95,7 @@ describe('Client', () => {
 
   it('should receive user leave event', async (done) => {
     const room1 = await join({ socket: socket1, room: 'test' });
-    room1.subscribe('test.userLeave', (params) => {
+    room1.subscribe('userLeave', (params) => {
       expect(params).toBeDefined();
       done();
     });
