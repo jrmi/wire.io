@@ -1,4 +1,10 @@
 
+2.0.1 / 2021-05-22
+==================
+
+  * Fix userLeave/enter signal subscription
+  * Add dockerfile
+
 2.0.0 / 2021-05-22
 ==================
 
