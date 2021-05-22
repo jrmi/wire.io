@@ -98,7 +98,7 @@ class Client2CLient {
  * Join a super socket room.
  * @param {socket} socket socket.io instance.
  * @param {string} name of the room
- * @param {function} onMaster is called when the client became the master of
+ * @param {function} onMaster is called when the client become the master of
  *   the room, i.e. the first client or the next one if the first quit.
  * @param {function} onJoined is called on each connection, reconnection after
  *   client2client is initialized.
@@ -121,7 +121,7 @@ export const joinClient2Client = ({
       onJoined(C2Croom);
       resolve(C2Croom);
     });
-    // Relaunch on reconnection
+    // Rejoin on reconnection
     socket.on('reconnect', () => {
       // Restore events with same userId
       socket.emit('joinSuperSocket', { room, userId: C2Croom.userId });

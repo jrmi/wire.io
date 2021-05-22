@@ -78,14 +78,6 @@ export const handleC2C = (
       }
     });
 
-    socket.once(`${roomName}.leave`, ({ name }) => {
-      socket.off(`${roomName}.register`);
-      socket.off(`${roomName}.unregister`);
-      socket.off(`${roomName}.call`);
-      socket.off(`${roomName}.publish`);
-      socket.leave(roomName);
-    });
-
     const onLeave = () => {
       rooms[roomName].users = rooms[roomName].users.filter(
         ({ userId: uid }) => uid !== userId
@@ -110,6 +102,16 @@ export const handleC2C = (
     };
 
     socket.on('disconnect', onLeave);
+
+    socket.once(`${roomName}.leave`, () => {
+      socket.removeAllListeners(`${roomName}.register`);
+      socket.removeAllListeners(`${roomName}.unregister`);
+      socket.removeAllListeners(`${roomName}.call`);
+      socket.removeAllListeners(`${roomName}.publish`);
+      socket.off('disconnect', onLeave);
+      onLeave();
+      socket.leave(roomName);
+    });
 
     if (isMaster) {
       promoteMaster();
