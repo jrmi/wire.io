@@ -113,10 +113,10 @@ export const handleC2C = (
       socket.leave(roomName);
     });
 
+    socket.emit(`${roomName}.roomJoined`, userId);
     if (isMaster) {
       promoteMaster();
     }
-    socket.emit(`${roomName}.roomJoined`, userId);
     socket.broadcast.to(roomName).emit(`${roomName}.userEnter`, userId);
     log(
       `${logPrefix}User ${userId} joined room ${roomName}.${
