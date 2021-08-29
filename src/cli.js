@@ -8,7 +8,7 @@ export const SOCKET_COMPAT = ['1', 'true'].includes(process.env.SOCKET_COMPAT);
 export const PORT = process.env.PORT || 4000;
 
 if (SOCKET_COMPAT) {
-  log.info(`Socket.io 2.X compatibility is enabled`);
+  console.log(`Socket.io 2.X compatibility is enabled`);
 }
 
 startServer({

@@ -6,15 +6,21 @@ venerable and very usefull [socket.io](https://socket.io/).
 
 Compatible with 2.X and 3.X version of socket.io.
 
+## Usage
+
+Client2client.io rely on [socket.io](https://socket.io/) on server and client.
+
+Launch the server without installing with npx:
+
+```sh
+npx client2client.io # need npm v7 in order to work
+```
+
 ## Installation
 
 ```sh
 npm install client2client.io
 ```
-
-## Usage
-
-Client2client rely on [socket.io](https://socket.io/) on server and client.
 
 ### Serve side code
 
