@@ -2,9 +2,9 @@ import { nanoid } from 'nanoid';
 
 const rooms = {};
 
-export const handleC2C = (
+export const handleWire = (
   socket,
-  { log = console.log, logPrefix = '[c2c] ' } = {}
+  { log = console.log, logPrefix = '[Wire.io] ' } = {}
 ) => {
   socket.on('joinSuperSocket', ({ room: roomName, userId: givenUserId }) => {
     socket.join(roomName);
@@ -126,4 +126,4 @@ export const handleC2C = (
   });
 };
 
-export default handleC2C;
+export default handleWire;

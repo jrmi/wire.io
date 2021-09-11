@@ -1,6 +1,6 @@
 {
-  "name": "client2client.io",
-  "version": "2.0.3",
+  "name": "wire.io",
+  "version": "1.0.0",
   "description": "Socket.io wrapper to enable client to client communications like RPC and pub/sub. Inspired by WAMP protocol.",
   "main": "lib/index.js",
   "keywords": [
@@ -11,8 +11,8 @@
   "author": "Jérémie Pardou",
   "license": "ISC",
   "bin": {
-    "client2client": "lib/cli.es5.js",
-    "client2client.io": "lib/cli.es5.js"
+    "wire": "lib/cli.es5.js",
+    "wire.io": "lib/cli.es5.js"
   },
   "scripts": {
     "clean": "rm ./lib/ -r",

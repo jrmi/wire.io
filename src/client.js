@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid';
 
-class Client2CLient {
+class Wire {
   constructor(socket, room, userId = null) {
     this._socket = socket;
     this.userId = userId;
@@ -111,58 +111,58 @@ class Client2CLient {
 }
 
 /**
- * Join a client2client room.
+ * Join a wire.io room.
  * @param {socket} socket socket.io instance.
  * @param {string} name of the room
  * @param {function} onMaster is called when the client become the master of
  *   the room, i.e. the first client or the next one if the first quit.
  * @param {function} onJoined is called on each connection, reconnection after
- *   client2client is initialized.
+ *   wire.io is initialized.
  * @param {string} userId (optionnal) to force userId.
  */
-export const joinClient2Client = ({
+export const joinWire = ({
   socket,
   room,
   onJoined = () => {},
   onMaster = () => {},
   userId = null,
 }) => {
-  const C2Croom = new Client2CLient(socket, room, userId);
+  const WireRoom = new Wire(socket, room, userId);
   return new Promise((resolve) => {
     // Avoid multiple join
     let waitForResponse = true;
     socket.on(`${room}.isMaster`, () => {
-      if (C2Croom._left) {
+      if (WireRoom._left) {
         return;
       }
       onMaster(room);
     });
 
     socket.on(`${room}.roomJoined`, (userId) => {
-      if (C2Croom._left) {
+      if (WireRoom._left) {
         return;
       }
-      C2Croom.userId = userId;
+      WireRoom.userId = userId;
       waitForResponse = false;
-      onJoined(C2Croom);
-      resolve(C2Croom);
+      onJoined(WireRoom);
+      resolve(WireRoom);
     });
 
     // Rejoin on reconnection
     socket.on('connect', () => {
       // If joined already called or room left
       // we quit
-      if (C2Croom._left || waitForResponse) {
+      if (WireRoom._left || waitForResponse) {
         return;
       }
       // Restore events with same userId
       socket.emit('joinSuperSocket', {
         room,
-        userId: C2Croom.userId,
+        userId: WireRoom.userId,
       });
     });
     socket.emit('joinSuperSocket', { room, userId });
   });
 };
 
-export default joinClient2Client;
+export default joinWire;

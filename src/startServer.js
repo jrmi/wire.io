@@ -3,7 +3,7 @@ import { createServer } from 'http';
 import io from 'socket.io';
 import cors from 'cors';
 
-import { handleC2C } from '.';
+import { handleWire } from '.';
 
 const startServer = ({ socketIOConfig = {}, port = 4000 }) => {
   var app = express();
@@ -24,7 +24,7 @@ const startServer = ({ socketIOConfig = {}, port = 4000 }) => {
   });
 
   ioServer.on('connection', (socket) => {
-    handleC2C(socket, { log: (msg) => console.log(msg) });
+    handleWire(socket, { log: (msg) => console.log(msg) });
   });
 
   app.get('/', (req, res) => {

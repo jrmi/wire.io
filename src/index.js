@@ -1,4 +1,4 @@
-import handleC2C from './server';
-import join from './client';
+import handleWire from './server';
+import joinWire from './client';
 
-export { handleC2C, join };
+export { handleWire, joinWire };
