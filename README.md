@@ -16,6 +16,12 @@ Launch the server without installing with npx:
 npx wire.io # need npm v7 in order to work
 ```
 
+Launch using docker:
+
+```sh
+docker run --rm  -p 4000:4000 jrmi/wire.io
+```
+
 ## Installation
 
 ```sh
@@ -23,6 +29,8 @@ npm install wire.io
 ```
 
 ### Serve side code
+
+If you want to integrate Wire.io to your existing server, follow this instructions:
 
 ```js
 import express from 'express';
@@ -51,7 +59,7 @@ io.on('connection', (socket) => {
 
 ```js
 import io from 'socket.io-client';
-import { join } from 'wire.io';
+import { joinWire } from 'wire.io';
 
 const socket = io.connect("<socket server url>", {
       'reconnection delay': 0,
