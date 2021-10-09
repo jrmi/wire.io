@@ -3,6 +3,13 @@
   "version": "3.0.0",
   "description": "Socket.io wrapper to enable client to client communications like RPC and pub/sub. Inspired by WAMP protocol.",
   "main": "lib/index.js",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js",
+    "./client": "./src/client.js",
+    "./server": "./src/server.js",
+    "./package.json": "./package.json"
+  },
   "keywords": [
     "socket",
     "client",
@@ -11,18 +18,14 @@
   "author": "Jérémie Pardou",
   "license": "ISC",
   "bin": {
-    "wire": "lib/cli.es5.js",
-    "wire.io": "lib/cli.es5.js"
+    "wire": "src/cli.js",
+    "wire.io": "src/cli.js"
   },
   "scripts": {
-    "clean": "rm ./lib/ -r",
     "test": "jest --watch",
     "coverage": "jest --coverage",
-    "build": "babel src --out-dir lib --ignore '**/*.test.js' --ignore '**/app.js'",
-    "shebang": "echo '#!/usr/bin/env node' > lib/cli.es5.js && cat lib/cli.js >> lib/cli.es5.js",
-    "prepare": "npm run build && npm run shebang",
-    "dev": "nodemon src/cli.js --exec babel-node",
-    "start": "babel-node src/cli.js",
+    "dev": "nodemon src/cli.js",
+    "start": "node src/cli.js",
     "ci": "start-server-and-test start http-get://localhost:4000 coverage",
     "version": "git changelog -n -t $npm_package_version && git add CHANGELOG.md"
   },
@@ -30,13 +33,8 @@
     "nanoid": "^3.1.20"
   },
   "devDependencies": {
-    "@babel/cli": "^7.14.3",
-    "@babel/core": "^7.14.3",
-    "@babel/node": "^7.14.2",
-    "@babel/preset-env": "^7.14.2",
-    "babel-jest": "^26.6.3",
     "jest": "^26.6.3",
-    "jest-transform-stub": "^2.0.0",
+    "jest-esm-transformer": "^1.0.0",
     "nodemon": "^2.0.4",
     "prettier": "^2.0.5",
     "retry-assert": "^1.0.0",
@@ -51,8 +49,7 @@
   },
   "jest": {
     "transform": {
-      ".+\\.(css|styl|less|sass|scss|png|jpg|ttf|woff|woff2)$": "jest-transform-stub",
-      "^.+\\.[t|j]sx?$": "babel-jest"
+      ".js": "jest-esm-transformer"
     }
   }
 }

@@ -1,9 +1,9 @@
 import express from 'express';
 import { createServer } from 'http';
-import io from 'socket.io';
+import { Server } from 'socket.io';
 import cors from 'cors';
 
-import { handleWire } from '.';
+import { handleWire } from './server.js';
 
 const startServer = ({ socketIOConfig = {}, port = 4000 }) => {
   var app = express();
@@ -19,7 +19,7 @@ const startServer = ({ socketIOConfig = {}, port = 4000 }) => {
 
   app.use(cors(corsOption));
 
-  const ioServer = io(http, {
+  const ioServer = new Server(http, {
     ...socketIOConfig,
   });
 
