@@ -10,6 +10,9 @@
     "./server": "./src/server.js",
     "./package.json": "./package.json"
   },
+  "browser": {
+    "wire.io": "./src/index.js"
+  },
   "keywords": [
     "socket",
     "client",
