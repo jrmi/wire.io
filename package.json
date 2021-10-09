@@ -23,7 +23,7 @@
   },
   "scripts": {
     "test": "jest --watch",
-    "coverage": "jest --coverage",
+    "coverage": "jest --coverage --detectOpenHandles ",
     "dev": "nodemon src/cli.js",
     "start": "node src/cli.js",
     "ci": "start-server-and-test start http-get://localhost:4000 coverage",
