@@ -34,22 +34,24 @@ describe('Client', () => {
   });
 
   afterEach(async () => {
-    // Cleanup
-    if (socket1.connected) {
-      socket1.disconnect();
-    }
-    if (socket2.connected) {
-      socket2.disconnect();
-    }
-    if (socket3.connected) {
-      socket3.disconnect();
-    }
+    const disco = () => {
+      // Cleanup
+      if (socket1 && socket1.connected) {
+        socket1.disconnect();
+        return false;
+      }
+      if (socket2 && socket2.connected) {
+        socket2.disconnect();
+        return false;
+      }
+      if (socket3 && socket3.connected) {
+        socket3.disconnect();
+        return false;
+      }
+      return true;
+    };
 
-    await retry(
-      () => !(socket1.connected && socket2.connected && socket3.connected)
-    )
-      .withTimeout(3000)
-      .untilTruthy();
+    await retry(disco).withTimeout(3000).untilTruthy();
   });
 
   it('connect to room', async () => {
