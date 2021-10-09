@@ -2,7 +2,7 @@
   "name": "wire.io",
   "version": "3.1.1",
   "description": "Socket.io wrapper to enable client to client communications like RPC and pub/sub. Inspired by WAMP protocol.",
-  "main": "lib/index.js",
+  "main": "./src/index.js",
   "type": "module",
   "exports": {
     ".": "./src/index.js",
@@ -10,9 +10,7 @@
     "./server": "./src/server.js",
     "./package.json": "./package.json"
   },
-  "browser": {
-    "wire.io": "./src/index.js"
-  },
+  "browser": "./src/index.js",
   "keywords": [
     "socket",
     "client",
