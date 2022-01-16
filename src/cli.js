@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import startServer from './startServer.js';
 import dotenv from 'dotenv';
 
