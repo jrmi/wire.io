@@ -3,9 +3,10 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-export const SOCKET_PATH = process.env.SOCKET_PATH || '/socket.io';
+export const SOCKET_PATH =
+  process.env.WIREIO_SOCKET_PATH || process.env.SOCKET_PATH || '/socket.io';
 export const SOCKET_COMPAT = ['1', 'true'].includes(process.env.SOCKET_COMPAT);
-export const PORT = process.env.PORT || 4000;
+export const PORT = process.env.WIREIO_PORT || process.env.PORT || 4000;
 
 if (SOCKET_COMPAT) {
   console.log(`Socket.io 2.X compatibility is enabled`);
