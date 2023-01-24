@@ -2,7 +2,7 @@
 
 A web client to client communication channel that mimic [WAMP protocol](https://wamp-proto.org/). You can pub/sub event and make RPC calls directly to other clients through a router.
 Way mush simpler and light than Autobahn and don't need a fat router when you need something less powerfull. It based on
-venerable and very usefull [socket.io](https://socket.io/).
+venerable and very useful [socket.io](https://socket.io/).
 
 Compatible with 2.X and 3.X version of socket.io.
 
