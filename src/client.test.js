@@ -1,3 +1,4 @@
+import { jest } from '@jest/globals';
 import io from 'socket.io-client';
 import joinWire from './client';
 import retry from 'retry-assert';
