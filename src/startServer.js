@@ -32,7 +32,7 @@ const startServer = ({ socketIOConfig = {}, port = 4000 }) => {
   });
 
   http.listen(port, () => {
-    console.log(`listening on *:${port}`);
+    console.log(`Wire.io is listening on *:${port}`);
   });
 };
 

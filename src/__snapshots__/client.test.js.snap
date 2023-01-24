@@ -1,0 +1,11 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Client should call remote first function 1`] = `undefined`;
+
+exports[`Client should call remote last function 1`] = `undefined`;
+
+exports[`Client should call remote random function 1`] = `undefined`;
+
+exports[`Client should not be able to register different function type 1`] = `undefined`;
+
+exports[`Client should not be able to register different function type 2`] = `undefined`;

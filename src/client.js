@@ -55,7 +55,8 @@ class Wire {
    * @param {string} name of function
    * @param {function} callback the function that handle the function result
    */
-  register(name, callback) {
+  register(name, callback, { invoke = 'single' } = {}) {
+    const registerId = nanoid();
     // Executed when another client call the function
     const toBeCalled = async ({ callId, params }) => {
       try {
@@ -68,25 +69,34 @@ class Wire {
         this._socket.emit(`${this.room}.result.${callId}`, { err: '' + err });
       }
     };
-    return new Promise((resolve) => {
-      this._socket.once(`${this.room}.register.${name}`, () => {
-        this._socket.on(`${this.room}.call.${name}`, toBeCalled);
+    return new Promise((resolve, reject) => {
+      this._socket.once(
+        `${this.room}.register.${name}.${registerId}`,
+        (result) => {
+          if (result.hasOwnProperty('ok')) {
+            // Remove previously registered callback
+            this._socket.off(`${this.room}.call.${name}`);
+            this._socket.on(`${this.room}.call.${name}`, toBeCalled);
 
-        // Return unregister callback
-        const unregisterCallback = () =>
-          new Promise((resolve) => {
-            this._socket.once(`${this.room}.unregister.${name}`, () => {
-              this._socket.off(`${this.room}.call.${name}`);
-              resolve();
-            });
-            this._socket.emit(`${this.room}.unregister`, { name });
-          });
+            // Return unregister callback
+            const unregisterCallback = () =>
+              new Promise((resolve) => {
+                this._socket.once(`${this.room}.unregister.${name}`, () => {
+                  this._socket.off(`${this.room}.call.${name}`);
+                  resolve();
+                });
+                this._socket.emit(`${this.room}.unregister`, { name });
+              });
 
-        this.toUnregister.push(unregisterCallback);
+            this.toUnregister.push(unregisterCallback);
 
-        resolve(unregisterCallback);
-      });
-      this._socket.emit(`${this.room}.register`, { name });
+            resolve(unregisterCallback);
+          } else {
+            reject(result.err);
+          }
+        }
+      );
+      this._socket.emit(`${this.room}.register`, { registerId, name, invoke });
     });
   }
 
