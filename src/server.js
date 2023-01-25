@@ -30,106 +30,106 @@ export const handleWire = (
       isMaster,
     });
 
-    // Publish event to others and self if `self`
-    socket.on(`${roomName}.publish`, ({ name, params, self }) => {
-      if (self) {
-        socket.emit(`${roomName}.${name}`, params);
+    /**
+     * Call a remote function on the client.
+     * @param {string} name the name of the function
+     * @param {*} params the params of the call
+     * @returns the call result (async).
+     */
+    const _callClientRPC = async (name, params) => {
+      const callId = nanoid();
+      return new Promise((resolve, reject) => {
+        socket.once(`${roomName}._result.${callId}`, (result) => {
+          if (result.hasOwnProperty('ok')) {
+            resolve(result.ok);
+          } else {
+            reject(new Error(result.err));
+          }
+        });
+        socket.emit(`${roomName}._call`, { callId, name, params });
+      });
+    };
+
+    /**
+     * Register a new RPC from the client.
+     * @param {*} param0
+     */
+    const register = ({ name, invoke = 'single' }) => {
+      const existingInvoke = rooms[roomName].rpc[name]?.invoke;
+
+      if (existingInvoke && invoke !== existingInvoke) {
+        throw new Error(
+          `Can't register a new function under the ${name} with this invoke value.`
+        );
       }
-      socket.broadcast.to(roomName).emit(`${roomName}.${name}`, params);
-    });
+      if (
+        existingInvoke == 'single' &&
+        rooms[roomName].rpc[name].callbacks.length >= 1
+      ) {
+        throw new Error(`Function ${name} already exists`);
+      }
 
-    // Register new remote function
-    socket.on(
-      `${roomName}.register`,
-      ({ registerId, name, invoke = 'single' }) => {
-        const existingInvoke = rooms[roomName].rpc[name]?.invoke;
-
-        if (existingInvoke && invoke !== existingInvoke) {
-          socket.emit(`${roomName}.register.${name}.${registerId}`, {
-            err: `Can't register a new function under the ${name} with this invoke value.`,
-          });
-          return;
-        }
-        if (
-          existingInvoke == 'single' &&
-          rooms[roomName].rpc[name].callbacks.length >= 1
-        ) {
-          socket.emit(`${roomName}.register.${name}.${registerId}`, {
-            err: `Function ${name} al`,
-          });
-          return;
-        }
-
-        // Define function for the RPC
-        const rpcCallback = ({ callId, params }) => {
-          return new Promise((resolve, reject) => {
-            if (!socket.connected) {
-              // Handle case of disconnected socket
-              delete rooms[roomName].rpc[name];
-              resolve({ err: `Function ${name} is not registered` });
-            } else {
-              // Schedule result
-              socket.once(`${roomName}.result.${callId}`, (result) => {
-                resolve(result);
-              });
-              // Call function from client
-              socket.emit(`${roomName}.call.${name}`, { callId, params });
-            }
-          });
+      if (!rooms[roomName].rpc[name]) {
+        rooms[roomName].rpc[name] = {
+          invoke,
+          callbacks: [],
         };
-
-        if (!rooms[roomName].rpc[name]) {
-          rooms[roomName].rpc[name] = {
-            invoke,
-            callbacks: [],
-          };
-        }
-
-        // Remove previously registered callback from the same client
-        if (registeredRPCs[name]) {
-          rooms[roomName].rpc[name].callbacks = rooms[roomName].rpc[
-            name
-          ].callbacks.filter((callback) => callback !== registeredRPCs[name]);
-        }
-
-        registeredRPCs[name] = rpcCallback;
-        rooms[roomName].rpc[name].callbacks.push(rpcCallback);
-
-        socket.emit(`${roomName}.register.${name}.${registerId}`, { ok: true });
       }
-    );
 
-    socket.on(`${roomName}.unregister`, ({ name }) => {
-      if (rooms[roomName].rpc[name] === undefined) {
-        socket.emit(`${roomName}.unregister.${name}`);
-      } else {
+      // Remove previously registered callback from the same client
+      if (registeredRPCs[name]) {
+        rooms[roomName].rpc[name].callbacks = rooms[roomName].rpc[
+          name
+        ].callbacks.filter((callback) => callback !== registeredRPCs[name]);
+      }
+
+      const rpcCallback = async (params) => {
+        if (!socket.connected) {
+          throw new Error(`Function ${name} is not registered`);
+        }
+        return await _callClientRPC(name, params);
+      };
+
+      registeredRPCs[name] = rpcCallback;
+      rooms[roomName].rpc[name].callbacks.push(rpcCallback);
+    };
+
+    /**
+     * Unregister a RPC from the client.
+     * @param {*} param0
+     */
+    const unregister = ({ name }) => {
+      if (rooms[roomName].rpc[name] !== undefined) {
         const { callbacks } = rooms[roomName].rpc[name];
 
         rooms[roomName].rpc[name].callbacks = callbacks.filter(
           (rpc) => rpc !== registeredRPCs[name]
         );
-        // Remove everything if it was the last
+        // Remove everything if it was the last function
         if (rooms[roomName].rpc[name].callbacks.length === 0) {
           delete rooms[roomName].rpc[name];
         }
         delete registeredRPCs[name];
-
-        socket.emit(`${roomName}.unregister.${name}`);
       }
-    });
+    };
 
-    // Call a RPC from another client
-    socket.on(`${roomName}.call`, async ({ name, callId, params }) => {
+    /**
+     * Call a RPC on another client.
+     * @param {*} param0
+     * @returns
+     */
+    const call = async ({ name, params }) => {
       if (
         rooms[roomName].rpc[name] === undefined ||
         rooms[roomName].rpc[name].callbacks.length === 0
       ) {
-        socket.emit(`${roomName}.result.${callId}`, {
-          err: `Function ${name} is not registered`,
-        });
+        throw new Error(`Function ${name} is not registered`);
       } else {
         const { invoke, callbacks } = rooms[roomName].rpc[name];
+
         let callback;
+
+        // Select the callback to execute
         switch (invoke) {
           case 'random':
             callback = callbacks[Math.floor(Math.random() * callbacks.length)];
@@ -140,18 +140,43 @@ export const handleWire = (
           case 'first':
           case 'single':
           default:
-            // Select the callback to execute
             callback = callbacks[0];
         }
-        const result = await callback({
-          callId,
-          params,
+
+        return await callback(params);
+      }
+    };
+
+    const actions = { register, unregister, call };
+
+    /**
+     * Handle all calls from the client.
+     */
+    socket.on(`${roomName}._call`, async ({ callId, name, params }) => {
+      try {
+        if (!actions[name]) {
+          throw new Error(`Method ${name} does not exist`);
+        }
+        const result = await actions[name](params);
+        socket.emit(`${roomName}._result.${callId}`, {
+          ok: result ? result : null,
         });
-        // Return result to caller
-        socket.emit(`${roomName}.result.${callId}`, result);
+      } catch (err) {
+        socket.emit(`${roomName}._result.${callId}`, { err: `${err.message}` });
       }
     });
 
+    // Publish event to others and self if `self`
+    socket.on(`${roomName}.publish`, ({ name, params, self }) => {
+      if (self) {
+        socket.emit(`${roomName}.${name}`, params);
+      }
+      socket.broadcast.to(roomName).emit(`${roomName}.${name}`, params);
+    });
+
+    /**
+     * Called when the user leave the room.
+     */
     const onLeave = () => {
       // Remove registered RPCs from this client
       rooms[roomName].rpc = Object.fromEntries(
@@ -196,9 +221,8 @@ export const handleWire = (
     socket.on('disconnect', onLeave);
 
     socket.once(`${roomName}.leave`, () => {
-      socket.removeAllListeners(`${roomName}.register`);
-      socket.removeAllListeners(`${roomName}.unregister`);
-      socket.removeAllListeners(`${roomName}.call`);
+      // Remove all listeners
+      socket.removeAllListeners(`${roomName}._call`);
       socket.removeAllListeners(`${roomName}.publish`);
       socket.off('disconnect', onLeave);
       onLeave();
@@ -208,8 +232,10 @@ export const handleWire = (
     if (isMaster) {
       promoteMaster();
     }
+
     socket.emit(`${roomName}.roomJoined`, userId);
     socket.broadcast.to(roomName).emit(`${roomName}.userEnter`, userId);
+
     log(
       `${logPrefix}User ${userId} joined room ${roomName}.${
         isMaster ? ' Is room master.' : ''
