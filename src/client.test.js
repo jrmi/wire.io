@@ -192,7 +192,7 @@ describe('Client', () => {
     try {
       await room2.call('testrpc', { test: 'testerror' });
     } catch (err) {
-      expect(err).toBe('Error: test error');
+      expect(err).toBe('test error');
       done();
     }
   });
