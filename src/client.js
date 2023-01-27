@@ -9,6 +9,7 @@ class Wire {
       () => {
         this._socket.off(`${this.room}.isMaster`);
         this._socket.off(`${this.room}.roomJoined`);
+        this._socket.off(`${this.room}._call`);
       },
     ];
     this._left = false;
