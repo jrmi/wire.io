@@ -1,4 +1,9 @@
 
+3.3.2 / 2023-02-05
+==================
+
+  * Disallow to unregister if another function has been registered
+
 3.3.1 / 2023-01-27
 ==================
 
