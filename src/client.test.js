@@ -243,7 +243,7 @@ describe('Client', () => {
       retry(() => room3.call('testrpc'))
         .withTimeout(1000)
         .until((result) => expect(result).toEqual({}))
-    ).rejects.toThrowErrorMatchingSnapshot();
+    ).rejects.toMatchSnapshot();
   });
 
   it('should call remote last function', async () => {
@@ -292,7 +292,7 @@ describe('Client', () => {
       retry(() => room3.call('testrpc'))
         .withTimeout(1000)
         .until((result) => expect(result).toEqual({}))
-    ).rejects.toThrowErrorMatchingSnapshot();
+    ).rejects.toMatchSnapshot();
   });
 
   it('should call remote random function', async () => {
@@ -341,7 +341,7 @@ describe('Client', () => {
       retry(() => room3.call('testrpc'))
         .withTimeout(1000)
         .until((result) => expect(result).toEqual({}))
-    ).rejects.toThrowErrorMatchingSnapshot();
+    ).rejects.toMatchSnapshot();
   });
 
   it('should not be able to register different function type', async () => {
@@ -365,7 +365,7 @@ describe('Client', () => {
         },
         { invoke: 'first' }
       )
-    ).rejects.toThrowErrorMatchingSnapshot();
+    ).rejects.toMatchSnapshot();
 
     await unregister1();
 
@@ -377,10 +377,33 @@ describe('Client', () => {
     expect(result).toEqual({ answer: 46 });
 
     await expect(
-      room1.register('testrpc', (params) => {
+      room2.register('testrpc', (params) => {
         return { answer: 47 };
       })
-    ).rejects.toThrowErrorMatchingSnapshot();
+    ).rejects.toMatchSnapshot();
+
+    // We should be able to replace a single RPC from the registerer
+    const unregister2 = await room1.register('testrpc', (params) => {
+      return { answer: 47 };
+    });
+
+    result = await room3.call('testrpc');
+    expect(result).toEqual({ answer: 47 });
+
+    const unregister3 = await room1.register('testrpc', (params) => {
+      return { answer: 48 };
+    });
+
+    // If we unregister after the function has been replaced it shouldn't unregister
+    // the existing function
+    await unregister2();
+
+    result = await room3.call('testrpc');
+    expect(result).toEqual({ answer: 48 });
+
+    await unregister3();
+
+    await expect(room3.call('testrpc')).rejects.toMatchSnapshot();
   });
 
   it('should call onMaster callback on leave and disconnect', async () => {

@@ -105,6 +105,7 @@ class Wire {
    */
   async register(name, callback, { invoke = 'single' } = {}) {
     // Add to locally registered callback
+
     this.registeredRPC[name] = callback;
 
     await this._callServerRPC('register', {
@@ -114,8 +115,10 @@ class Wire {
 
     // Return unregister callback
     const unregisterCallback = () => {
-      delete this.registeredRPC[name];
-      return this._callServerRPC('unregister', { name });
+      if (this.registeredRPC[name] === callback) {
+        delete this.registeredRPC[name];
+        return this._callServerRPC('unregister', { name });
+      }
     };
 
     this.toUnregister.push(unregisterCallback);

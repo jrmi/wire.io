@@ -56,6 +56,7 @@ export const handleWire = (
      */
     const register = ({ name, invoke = 'single' }) => {
       const existingInvoke = rooms[roomName].rpc[name]?.invoke;
+      const existingCallbacks = rooms[roomName].rpc[name]?.callbacks || [];
 
       if (existingInvoke && invoke !== existingInvoke) {
         throw new Error(
@@ -63,8 +64,9 @@ export const handleWire = (
         );
       }
       if (
-        existingInvoke == 'single' &&
-        rooms[roomName].rpc[name].callbacks.length >= 1
+        existingInvoke === 'single' &&
+        existingCallbacks.length >= 1 &&
+        existingCallbacks[0] !== registeredRPCs[name]
       ) {
         throw new Error(`Function ${name} already exists`);
       }

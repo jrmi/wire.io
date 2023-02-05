@@ -6,7 +6,7 @@ RUN chown -R node /usr/src/app
 
 RUN apk add --no-cache tini
 
-RUN npm install -g npm && npm install -g wire.io@latest
+RUN npm install -g npm && npm install -g wire.io@3.3.1
 
 USER node
 
