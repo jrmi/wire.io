@@ -1,30 +1,59 @@
 import { nanoid } from 'nanoid';
 
-const rooms = {};
+const rooms = new Map();
+const MAX_NAME_LENGTH = 128;
+
+const isValidName = (value) =>
+  typeof value === 'string' &&
+  value.length > 0 &&
+  value.length <= MAX_NAME_LENGTH &&
+  !/[\u0000-\u001f\u007f]/u.test(value);
+
+const assertValidName = (value, label) => {
+  if (!isValidName(value)) throw new Error(`Invalid ${label}`);
+};
+
+const isObject = (value) => value !== null && typeof value === 'object';
 
 export const handleWire = (
   socket,
   { log = console.log, logPrefix = '[Wire.io] ' } = {}
 ) => {
-  socket.on('joinSuperSocket', ({ room: roomName, userId: givenUserId }) => {
+  socket.on('joinSuperSocket', (payload) => {
+    if (!isObject(payload)) {
+      socket.emit('wire.error', 'Invalid join payload');
+      return;
+    }
+    const { room: roomName, userId: givenUserId } = payload;
+    try {
+      assertValidName(roomName, 'room name');
+      if (givenUserId !== null && givenUserId !== undefined) {
+        assertValidName(givenUserId, 'user id');
+      }
+    } catch (error) {
+      socket.emit('wire.error', error.message);
+      return;
+    }
     socket.join(roomName);
 
-    if (rooms[roomName] === undefined) {
-      rooms[roomName] = { users: [], rpc: {} };
+    if (!rooms.has(roomName)) {
+      rooms.set(roomName, { users: [], rpc: Object.create(null) });
     }
+    const room = rooms.get(roomName);
 
     const userId = givenUserId || nanoid();
 
-    const registeredRPCs = {};
+    const registeredRPCs = Object.create(null);
 
-    let isMaster = rooms[roomName].users.length === 0;
+    let isMaster = room.users.length === 0;
 
     const promoteMaster = () => {
       isMaster = true;
       socket.emit(`${roomName}.isMaster`);
     };
 
-    rooms[roomName].users.push({
+    room.users.push({
+      socket,
       userId,
       promoteMaster,
       isMaster,
@@ -40,7 +69,7 @@ export const handleWire = (
       const callId = nanoid();
       return new Promise((resolve, reject) => {
         socket.once(`${roomName}._result.${callId}`, (result) => {
-          if (result.hasOwnProperty('ok')) {
+          if (Object.hasOwn(result, 'ok')) {
             resolve(result.ok);
           } else {
             reject(new Error(result.err));
@@ -55,8 +84,12 @@ export const handleWire = (
      * @param {*} param0
      */
     const register = ({ name, invoke = 'single' }) => {
-      const existingInvoke = rooms[roomName].rpc[name]?.invoke;
-      const existingCallbacks = rooms[roomName].rpc[name]?.callbacks || [];
+      assertValidName(name, 'RPC name');
+      if (!['single', 'first', 'last', 'random'].includes(invoke)) {
+        throw new Error('Invalid invoke mode');
+      }
+      const existingInvoke = room.rpc[name]?.invoke;
+      const existingCallbacks = room.rpc[name]?.callbacks || [];
 
       if (existingInvoke && invoke !== existingInvoke) {
         throw new Error(
@@ -71,8 +104,8 @@ export const handleWire = (
         throw new Error(`Function ${name} already exists`);
       }
 
-      if (!rooms[roomName].rpc[name]) {
-        rooms[roomName].rpc[name] = {
+      if (!room.rpc[name]) {
+        room.rpc[name] = {
           invoke,
           callbacks: [],
         };
@@ -80,9 +113,9 @@ export const handleWire = (
 
       // Remove previously registered callback from the same client
       if (registeredRPCs[name]) {
-        rooms[roomName].rpc[name].callbacks = rooms[roomName].rpc[
-          name
-        ].callbacks.filter((callback) => callback !== registeredRPCs[name]);
+        room.rpc[name].callbacks = room.rpc[name].callbacks.filter(
+          (callback) => callback !== registeredRPCs[name]
+        );
       }
 
       const rpcCallback = async (params) => {
@@ -93,7 +126,7 @@ export const handleWire = (
       };
 
       registeredRPCs[name] = rpcCallback;
-      rooms[roomName].rpc[name].callbacks.push(rpcCallback);
+      room.rpc[name].callbacks.push(rpcCallback);
     };
 
     /**
@@ -101,15 +134,16 @@ export const handleWire = (
      * @param {*} param0
      */
     const unregister = ({ name }) => {
-      if (rooms[roomName].rpc[name] !== undefined) {
-        const { callbacks } = rooms[roomName].rpc[name];
+      assertValidName(name, 'RPC name');
+      if (room.rpc[name] !== undefined) {
+        const { callbacks } = room.rpc[name];
 
-        rooms[roomName].rpc[name].callbacks = callbacks.filter(
+        room.rpc[name].callbacks = callbacks.filter(
           (rpc) => rpc !== registeredRPCs[name]
         );
         // Remove everything if it was the last function
-        if (rooms[roomName].rpc[name].callbacks.length === 0) {
-          delete rooms[roomName].rpc[name];
+        if (room.rpc[name].callbacks.length === 0) {
+          delete room.rpc[name];
         }
         delete registeredRPCs[name];
       }
@@ -122,12 +156,13 @@ export const handleWire = (
      */
     const call = async ({ name, params }) => {
       if (
-        rooms[roomName].rpc[name] === undefined ||
-        rooms[roomName].rpc[name].callbacks.length === 0
+        !isValidName(name) ||
+        room.rpc[name] === undefined ||
+        room.rpc[name].callbacks.length === 0
       ) {
         throw new Error(`Function ${name} is not registered`);
       } else {
-        const { invoke, callbacks } = rooms[roomName].rpc[name];
+        const { invoke, callbacks } = room.rpc[name];
 
         let callback;
 
@@ -154,9 +189,13 @@ export const handleWire = (
     /**
      * Handle all calls from the client.
      */
-    socket.on(`${roomName}._call`, async ({ callId, name, params }) => {
+    socket.on(`${roomName}._call`, async (payload) => {
+      const callId = isObject(payload) ? payload.callId : null;
       try {
-        if (!actions[name]) {
+        if (!isObject(payload)) throw new Error('Invalid RPC payload');
+        const { name, params } = payload;
+        assertValidName(callId, 'call id');
+        if (typeof name !== 'string' || !Object.hasOwn(actions, name)) {
           throw new Error(`Method ${name} does not exist`);
         }
         const result = await actions[name](params);
@@ -169,7 +208,9 @@ export const handleWire = (
     });
 
     // Publish event to others and self if `self`
-    socket.on(`${roomName}.publish`, ({ name, params, self }) => {
+    socket.on(`${roomName}.publish`, (payload) => {
+      if (!isObject(payload) || !isValidName(payload.name)) return;
+      const { name, params, self } = payload;
       if (self) {
         socket.emit(`${roomName}.${name}`, params);
       }
@@ -179,10 +220,15 @@ export const handleWire = (
     /**
      * Called when the user leave the room.
      */
+    let left = false;
     const onLeave = () => {
+      if (left || !rooms.has(roomName)) return;
+      left = true;
+      rooms.delete(roomName);
+      const currentRoom = room;
       // Remove registered RPCs from this client
-      rooms[roomName].rpc = Object.fromEntries(
-        Object.entries(rooms[roomName].rpc)
+      currentRoom.rpc = Object.assign(Object.create(null), Object.fromEntries(
+        Object.entries(currentRoom.rpc)
           .map(([name, { invoke, callbacks }]) => {
             return [
               name,
@@ -195,29 +241,31 @@ export const handleWire = (
             ];
           })
           .filter(([name, { callbacks }]) => callbacks.length !== 0)
-      );
+      ));
 
-      rooms[roomName].users = rooms[roomName].users.filter(
-        ({ userId: uid }) => uid !== userId
+      currentRoom.users = currentRoom.users.filter(
+        ({ socket: joinedSocket }) => joinedSocket !== socket
       );
 
       log(
         `${logPrefix}User ${userId} quit room ${roomName}.${
           isMaster ? ' Was room master. ' : ''
-        } ${rooms[roomName].users.length} user(s) left.`
+        } ${currentRoom.users.length} user(s) left.`
       );
 
       // Promote the first user if master is gone
       if (
-        rooms[roomName].users.length > 0 &&
-        !rooms[roomName].users[0].isMaster
+        currentRoom.users.length > 0 &&
+        !currentRoom.users[0].isMaster
       ) {
-        const user = rooms[roomName].users[0];
+        const user = currentRoom.users[0];
         user.isMaster = true;
         user.promoteMaster();
         log(`${logPrefix}Promote ${user.userId} master of room ${roomName}`);
       }
       socket.broadcast.to(roomName).emit(`${roomName}.userLeave`, userId);
+
+      if (currentRoom.users.length > 0) rooms.set(roomName, currentRoom);
     };
 
     socket.on('disconnect', onLeave);
@@ -241,7 +289,7 @@ export const handleWire = (
     log(
       `${logPrefix}User ${userId} joined room ${roomName}.${
         isMaster ? ' Is room master.' : ''
-      } Room has ${rooms[roomName].users.length} user(s)`
+      } Room has ${room.users.length} user(s)`
     );
   });
 };

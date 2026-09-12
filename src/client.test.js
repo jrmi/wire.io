@@ -62,12 +62,11 @@ describe('Client', () => {
     expect(room.userId).not.toBe(null);
   });
 
-  it('should receive published event', async (done) => {
+  it('should receive published event', async () => {
     const room1 = await joinWire({ socket: socket1, room: 'test' });
     const room2 = await joinWire({ socket: socket2, room: 'test' });
     room1.subscribe('testevent', (params) => {
       expect(params).toEqual({ test: 'test' });
-      done();
     });
     room2.publish('testevent', { test: 'test' });
   });
@@ -85,33 +84,30 @@ describe('Client', () => {
     expect(callback).not.toHaveBeenCalled();
   });
 
-  it('should receive incoming user event', async (done) => {
+  it('should receive incoming user event', async () => {
     const room1 = await joinWire({ socket: socket1, room: 'test' });
 
     room1.subscribe('userEnter', (params) => {
       expect(params).toBeDefined();
-      done();
     });
 
     const room2 = await joinWire({ socket: socket2, room: 'test' });
   });
 
-  it('should receive user leave event', async (done) => {
+  it('should receive user leave event', async () => {
     const room1 = await joinWire({ socket: socket1, room: 'test' });
     room1.subscribe('userLeave', (params) => {
       expect(params).toBeDefined();
-      done();
     });
 
     const room2 = await joinWire({ socket: socket2, room: 'test' });
     socket2.disconnect();
   });
 
-  it('should receive self published event', async (done) => {
+  it('should receive self published event', async () => {
     const room1 = await joinWire({ socket: socket1, room: 'test' });
     room1.subscribe('testevent', (params) => {
       expect(params).toEqual({ test: 'test' });
-      done();
     });
     room1.publish('testevent', { test: 'test' }, true);
   });
@@ -171,18 +167,17 @@ describe('Client', () => {
     expect(firstCallback).not.toHaveBeenCalled();
   });
 
-  it('should not call not registered single remote function', async (done) => {
+  it('should not call not registered single remote function', async () => {
     const room2 = await joinWire({ socket: socket2, room: 'test' });
 
     try {
       await room2.call('testrpc', { test: 'testbis' });
     } catch (err) {
       expect(err).toBe('Function testrpc is not registered');
-      done();
     }
   });
 
-  it('should call single remote function with exception', async (done) => {
+  it('should call single remote function with exception', async () => {
     const room1 = await joinWire({ socket: socket1, room: 'test' });
     const room2 = await joinWire({ socket: socket2, room: 'test' });
 
@@ -193,7 +188,6 @@ describe('Client', () => {
       await room2.call('testrpc', { test: 'testerror' });
     } catch (err) {
       expect(err).toBe('test error');
-      done();
     }
   });
 
@@ -532,7 +526,7 @@ describe('Client', () => {
       .ensureTruthy();
   });
 
-  it('should call remote async function only in same room', async (done) => {
+  it('should call remote async function only in same room', async () => {
     const room1 = await joinWire({ socket: socket1, room: 'test' });
     const room2 = await joinWire({ socket: socket2, room: 'test' });
     const room3 = await joinWire({ socket: socket2, room: 'test3' });
@@ -550,7 +544,6 @@ describe('Client', () => {
       await room3.call('testrpc', { toto: 42 });
     } catch (err) {
       expect(err).toBe('Function testrpc is not registered');
-      done();
     }
   });
 });

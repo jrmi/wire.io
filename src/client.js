@@ -1,5 +1,16 @@
 import { nanoid } from 'nanoid';
 
+const MAX_NAME_LENGTH = 128;
+const isValidName = (value) =>
+  typeof value === 'string' &&
+  value.length > 0 &&
+  value.length <= MAX_NAME_LENGTH &&
+  !/[\u0000-\u001f\u007f]/u.test(value);
+
+const assertValidName = (value, label) => {
+  if (!isValidName(value)) throw new Error(`Invalid ${label}`);
+};
+
 class Wire {
   constructor(socket, room, userId = null) {
     this._socket = socket;
@@ -14,11 +25,14 @@ class Wire {
     ];
     this._left = false;
 
-    this.registeredRPC = {};
+    this.registeredRPC = Object.create(null);
 
     // Receive server RPC calls
     this._socket.on(`${this.room}._call`, async ({ callId, name, params }) => {
       try {
+        if (!Object.hasOwn(this.registeredRPC, name)) {
+          throw new Error(`Function ${name} is not registered`);
+        }
         const result = await this.registeredRPC[name](params);
         socket.emit(`${this.room}._result.${callId}`, {
           ok: result ? result : null,
@@ -42,7 +56,7 @@ class Wire {
     const callId = nanoid();
     return new Promise((resolve, reject) => {
       this._socket.once(`${this.room}._result.${callId}`, (result) => {
-        if (result.hasOwnProperty('ok')) {
+        if (Object.hasOwn(result, 'ok')) {
           resolve(result.ok);
         } else {
           reject(result.err);
@@ -71,6 +85,7 @@ class Wire {
    * @param {boolean} self if true, the publish get the event too
    */
   publish(name, params, self = false) {
+    assertValidName(name, 'event name');
     this._socket.emit(`${this.room}.publish`, { name, params, self });
   }
 
@@ -81,6 +96,8 @@ class Wire {
    *   of the function is the params sent with the event.
    */
   subscribe(event, callback) {
+    assertValidName(event, 'event name');
+    if (typeof callback !== 'function') throw new TypeError('Invalid callback');
     this._socket.on(`${this.room}.${event}`, callback);
 
     const unregisterCallback = () => {
@@ -104,6 +121,11 @@ class Wire {
    *     - 'random' A random RPC is called.
    */
   async register(name, callback, { invoke = 'single' } = {}) {
+    assertValidName(name, 'RPC name');
+    if (typeof callback !== 'function') throw new TypeError('Invalid callback');
+    if (!['single', 'first', 'last', 'random'].includes(invoke)) {
+      throw new Error('Invalid invoke mode');
+    }
     // Add to locally registered callback
 
     this.registeredRPC[name] = callback;
@@ -153,6 +175,10 @@ export const joinWire = ({
   onMaster = () => {},
   userId = null,
 }) => {
+  assertValidName(room, 'room name');
+  if (userId !== null && userId !== undefined) {
+    assertValidName(userId, 'user id');
+  }
   const WireRoom = new Wire(socket, room, userId);
   return new Promise((resolve) => {
     // Avoid multiple join

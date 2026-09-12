@@ -55,6 +55,10 @@ io.on('connection', (socket) => {
 });
 ```
 
+The bundled server disables cross-origin access by default. If using
+`startServer` with a browser client hosted elsewhere, pass an explicit CORS
+allowlist such as `{ corsOptions: { origin: ['https://app.example.com'] } }`.
+
 ## Client side code
 
 ```js
